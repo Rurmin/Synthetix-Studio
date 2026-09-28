@@ -1,0 +1,12 @@
+# Compiladores y binarios
+*.o
+*.exe
+*.out
+build/
+bin/
+
+# Directorios automáticos locales
+backups/*
+logs/*
+!backups/.gitkeep
+!logs/.gitkeep
