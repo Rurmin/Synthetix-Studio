@@ -9,7 +9,6 @@ from core.commands import (
     CdCommand,
     CommandInvoker,
     DelKeywordCommand,
-    DemoCommand,
     EditCommand,
     EvalCommand,
     ExitCommand,
@@ -44,9 +43,6 @@ def build_cli() -> tuple:
   """Construye el contexto del IDE y registra todos los comandos del Patrón Command."""
   ctx = IDEContext()
   invoker = CommandInvoker()
-
-  # 0. Comando Todo-en-Uno para probar todos los módulos de una sola vez
-  invoker.register(DemoCommand(invoker), aliases=("test-all", "probar"))
 
   # 1. Comandos Fase 2: Árbol N-ario (Workspace Virtual y Físico)
   invoker.register(MkdirCommand(ctx))
@@ -110,42 +106,48 @@ def seed_initial_workspace(ctx: IDEContext) -> None:
   ctx.b_tree.index_all_files(ctx.file_list)
 
 
-def print_welcome_banner() -> None:
+def print_commands_panel() -> None:
   print("\n======================================================================================")
-  print("     🚀 SYNTHETIX STUDIO CLI — FASE 2: ESTRUCTURAS JERÁRQUICAS Y BÚSQUEDA AVANZADA     ")
+  print("     🚀 SYNTHETIX STUDIO CLI — COMANDOS INDIVIDUALES (PATRÓN COMMAND)                 ")
   print("======================================================================================")
-  print("  ✨ MODO RÁPIDO (UN SOLO PASO):")
-  print("     • Escribe  demo      -> Ejecuta y demuestra los 4 ÁRBOLES automáticamente.")
-  print("     • Usa ';' entre comandos para aplicar varios de una sola vez:")
-  print('       mkdir src ; mv main.py src ; tree ; eval "(4+8)*3" ; suggest in ; find-global contador')
+  print("  📁 1. ÁRBOL N-ARIO (Carpetas y Archivos del Workspace):")
+  print("     • mkdir <carpeta>        -> Crea una carpeta nueva         (Ej: mkdir src)")
+  print("     • cd <carpeta>           -> Entra a carpeta o sube al padre(Ej: cd src  |  cd ..)")
+  print("     • mv <archivo> <carpeta> -> Mueve un archivo a una carpeta (Ej: mv main.py src)")
+  print("     • tree                   -> Dibuja el árbol de carpetas    (Recorrido Preorden)")
   print("--------------------------------------------------------------------------------------")
-  print("  🌳 COMANDOS POR ÁRBOL (Puedes escribirlos directos o solos para que el asistente te guíe):")
-  print("     [1. Árbol N-ario]   mkdir src       | cd src (o cd ..) | mv main.py src | tree")
-  print('     [2. Árbol Binario]  eval "(4+8)*3"  | lint-math')
-  print("     [3. Árbol AVL]      add-keyword struct | suggest in    | del-keyword struct | avl-info")
-  print("     [4. Árbol B]        index-all       | find-global contador | btree-info")
-  print("     [Archivos Fase 1]   touch test.py   | ls | cat | edit  | syntax | undo | redo | sort")
-  print("     [Ayuda / Salir]     help (o ayuda)  | exit (o salir)")
-  print("======================================================================================\n")
+  print("  ➗ 2. ÁRBOL BINARIO (Evaluador de Expresiones Matemáticas):")
+  print('     • eval "<expresion>"     -> Resuelve operación en Postorden(Ej: eval "(4+8)*3")')
+  print("     • lint-math              -> Calcula las operaciones del archivo activo")
+  print("--------------------------------------------------------------------------------------")
+  print("  📖 3. ÁRBOL AVL (Autocompletado y Diccionario Auto-balanceable):")
+  print("     • add-keyword <palabra>  -> Inserta palabra y balancea AVL (Ej: add-keyword struct)")
+  print("     • suggest <prefijo>      -> Autocompleta en orden A-Z      (Ej: suggest in)")
+  print("     • del-keyword <palabra>  -> Elimina palabra y rebalancea   (Ej: del-keyword struct)")
+  print("     • avl-info               -> Muestra recorridos Inorden, Preorden y Postorden")
+  print("--------------------------------------------------------------------------------------")
+  print("  🔍 4. ÁRBOL B (Índice de Búsqueda Global en Archivos):")
+  print("     • index-all              -> Escanea e indexa todas las variables en el Árbol B")
+  print("     • find-global <token>    -> Busca en qué archivo y línea está una variable (Ej: find-global contador)")
+  print("     • btree-info             -> Muestra las páginas internas del Árbol B")
+  print("--------------------------------------------------------------------------------------")
+  print("  📄 ARCHIVOS (Fase 1): touch | ls | cat | edit | use | syntax | undo | redo | sort | rm")
+  print("  ⚙️  SISTEMA          : help (tabla completa) | exit (salir)")
+  print("  💡 Tip: También puedes escribir solo el nombre del comando (ej: mkdir, eval, mv) y te pedirá los datos paso a paso.")
+  print("======================================================================================")
 
 
 def main() -> None:
   ctx, invoker = build_cli()
   seed_initial_workspace(ctx)
 
-  # Si se pasan comandos por argumento al ejecutar (ej: python main.py demo)
-  if len(sys.argv) > 1:
-    arg_cmd = " ".join(sys.argv[1:])
-    invoker.execute_line(arg_cmd)
-    return
-
   while True:
     try:
-      print_welcome_banner()
+      print_commands_panel()
       cwd_path = ctx.workspace_tree.get_virtual_path()
       active = ctx.file_list.get_active_file()
       active_tag = f" [{active.filename}]" if active else ""
-      raw_line = input(f"synthetix:{cwd_path}{active_tag}$ ")
+      raw_line = input(f"\nsynthetix:{cwd_path}{active_tag}$ ")
       invoker.execute_line(raw_line)
     except (EOFError, KeyboardInterrupt):
       print("\nSaliendo de Synthetix Studio... ¡Hasta luego!")

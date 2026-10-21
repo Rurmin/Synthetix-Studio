@@ -70,7 +70,7 @@ class MkdirCommand(Command):
     super().__init__(
         "mkdir",
         "mkdir <carpeta>",
-        "Crea una carpeta (o ruta anidada ej. src/utils) en el Workspace.",
+        "Crea una carpeta nueva en el directorio actual (ej: mkdir src).",
         "1. Árbol N-ario",
     )
     self._ctx = ctx
@@ -78,7 +78,12 @@ class MkdirCommand(Command):
   def execute(self, args: str) -> None:
     folder = args.strip()
     if not folder:
-      folder = input("  -> Nombre de la carpeta a crear (ej. src): ").strip()
+      print(
+          f"\n[Crear Carpeta en {self._ctx.workspace_tree.get_virtual_path()}]"
+      )
+      folder = input(
+          "  👉 Escribe el nombre de la carpeta (ej: src o src/utils): "
+      ).strip()
     if folder:
       self._ctx.workspace_tree.mkdir(folder)
 
@@ -90,7 +95,7 @@ class CdCommand(Command):
     super().__init__(
         "cd",
         "cd <carpeta>",
-        "Cambia de directorio en el Árbol N-ario ('cd ..' sube, 'cd /' va a raíz).",
+        "Entra a una carpeta o sube a la carpeta padre con 'cd ..'.",
         "1. Árbol N-ario",
     )
     self._ctx = ctx
@@ -98,8 +103,20 @@ class CdCommand(Command):
   def execute(self, args: str) -> None:
     target = args.strip()
     if not target:
+      # Mostrar carpetas hijas disponibles para guiar al usuario
+      curr = self._ctx.workspace_tree.current_dir.first_child
+      subfolders = ""
+      while curr is not None:
+        if curr.is_dir:
+          subfolders += f"'{curr.name}' "
+        curr = curr.next_sibling
+      print(
+          f"\n[Cambiar de Carpeta | Actual: {self._ctx.workspace_tree.get_virtual_path()}]"
+      )
+      if subfolders:
+        print(f"  Carpetas disponibles aquí: {subfolders}")
       target = input(
-          "  -> Carpeta destino (ej. src, .. para subir, / para raíz): "
+          "  👉 Escribe la carpeta destino (o '..' para subir al padre): "
       ).strip()
     if target:
       self._ctx.workspace_tree.cd(target)
@@ -112,7 +129,7 @@ class TreeCommand(Command):
     super().__init__(
         "tree",
         "tree",
-        "Imprime el árbol visual del proyecto recorriendo el Árbol N-ario en Preorden.",
+        "Dibuja en pantalla todas las carpetas y archivos (Recorrido Preorden).",
         "1. Árbol N-ario",
     )
     self._ctx = ctx
@@ -128,7 +145,7 @@ class MoveFileCommand(Command):
     super().__init__(
         "mv",
         "mv <archivo> <carpeta>",
-        "Mueve un archivo dentro de una carpeta del Árbol N-ario y en disco.",
+        "Mueve un archivo hacia una carpeta (ej: mv main.py src).",
         "1. Árbol N-ario",
     )
     self._ctx = ctx
@@ -136,15 +153,17 @@ class MoveFileCommand(Command):
   def execute(self, args: str) -> None:
     parts = args.strip().split(None, 1)
     if len(parts) < 2:
-      print("  [Asistente mv] Mover archivo dentro del Árbol N-ario:")
+      print("\n[Mover Archivo dentro del Árbol N-ario]")
       filename = (
           parts[0]
           if len(parts) == 1
-          else input("  -> Nombre del archivo a mover (ej. main.py): ").strip()
+          else input("  👉 Nombre del archivo a mover (ej: main.py): ").strip()
       )
-      dest_folder = input("  -> Carpeta destino (ej. src o ..): ").strip()
+      dest_folder = input(
+          "  👉 Carpeta destino (ej: src, o '..' para carpeta padre): "
+      ).strip()
       if not filename or not dest_folder:
-        print("[Error] Debes indicar archivo y carpeta destino.")
+        print("[Aviso] Operación cancelada: faltó archivo o carpeta destino.")
         return
     else:
       filename, dest_folder = parts[0], parts[1].strip()
@@ -163,7 +182,7 @@ class EvalCommand(Command):
     super().__init__(
         "eval",
         'eval "(4+8)*3"',
-        "Construye el Árbol Binario de Expresión y calcula el resultado en Postorden.",
+        "Construye el Árbol Binario de una operación y la resuelve en Postorden.",
         "2. Árbol Binario",
     )
     self._ctx = ctx
@@ -171,7 +190,10 @@ class EvalCommand(Command):
   def execute(self, args: str) -> None:
     expr = args.strip()
     if not expr:
-      expr = input("  -> Ingresa la expresión matemática (ej. (4+8)*3): ").strip()
+      print("\n[Evaluador de Expresiones con Árbol Binario]")
+      expr = input(
+          "  👉 Escribe la expresión matemática (ej: (4+8)*3 o (5+3)*2): "
+      ).strip()
     if not expr:
       return
     try:
@@ -195,7 +217,7 @@ class LintMathCommand(Command):
     super().__init__(
         "lint-math",
         "lint-math",
-        "Evalúa automáticamente todas las operaciones matemáticas del archivo activo.",
+        "Calcula automáticamente las operaciones matemáticas del archivo activo.",
         "2. Árbol Binario",
     )
     self._ctx = ctx
@@ -220,7 +242,7 @@ class AddKeywordCommand(Command):
     super().__init__(
         "add-keyword",
         "add-keyword <palabra>",
-        "Inserta una palabra clave en el Árbol AVL y lo auto-balancea con rotaciones.",
+        "Agrega una palabra clave al Árbol AVL y lo balancea con rotaciones.",
         "3. Árbol AVL",
     )
     self._ctx = ctx
@@ -228,18 +250,25 @@ class AddKeywordCommand(Command):
   def execute(self, args: str) -> None:
     cleaned = args.strip()
     if not cleaned:
-      cleaned = input(
-          "  -> Palabra clave a agregar al Árbol AVL (ej. struct): "
+      print("\n[Insertar Palabra Clave en Árbol AVL]")
+      keyword = input(
+          "  👉 Palabra clave a agregar (ej: struct, async, switch): "
       ).strip()
-    if not cleaned:
-      return
-    parts = cleaned.split(None, 1)
-    keyword = parts[0]
-    desc = (
-        parts[1]
-        if len(parts) > 1
-        else "Palabra clave registrada por el usuario."
-    )
+      if not keyword:
+        return
+      desc = input(
+          "  👉 Descripción breve (Enter para usar descripción por defecto): "
+      ).strip()
+      if not desc:
+        desc = "Palabra clave registrada por el usuario."
+    else:
+      parts = cleaned.split(None, 1)
+      keyword = parts[0]
+      desc = (
+          parts[1]
+          if len(parts) > 1
+          else "Palabra clave registrada por el usuario."
+      )
     self._ctx.avl_tree.insert(keyword, desc)
 
 
@@ -258,8 +287,9 @@ class DelKeywordCommand(Command):
   def execute(self, args: str) -> None:
     cleaned = args.strip()
     if not cleaned:
+      print("\n[Eliminar Palabra Clave del Árbol AVL]")
       cleaned = input(
-          "  -> Palabra clave a eliminar del Árbol AVL (ej. struct): "
+          "  👉 Palabra clave a eliminar (ej: struct): "
       ).strip()
     if cleaned:
       self._ctx.avl_tree.delete(cleaned)
@@ -272,7 +302,7 @@ class SuggestCommand(Command):
     super().__init__(
         "suggest",
         "suggest <prefijo>",
-        "Autocompleta palabras clave por prefijo usando búsqueda binaria + Inorden.",
+        "Autocompleta palabras que inicien con ese prefijo (ej: suggest in).",
         "3. Árbol AVL",
     )
     self._ctx = ctx
@@ -280,7 +310,10 @@ class SuggestCommand(Command):
   def execute(self, args: str) -> None:
     prefix = args.strip()
     if not prefix:
-      prefix = input("  -> Prefijo a buscar en el Árbol AVL (ej. in): ").strip()
+      print("\n[Autocompletado por Prefijo en Árbol AVL]")
+      prefix = input(
+          "  👉 Escribe las primeras letras a buscar (ej: in, p, c, f): "
+      ).strip()
     if prefix:
       self._ctx.avl_tree.print_suggestions(prefix)
 
@@ -313,7 +346,7 @@ class IndexAllCommand(Command):
     super().__init__(
         "index-all",
         "index-all",
-        "Escanea todos los archivos del proyecto e indexa variables/funciones en el Árbol B.",
+        "Escanea todos los archivos e indexa variables y funciones en el Árbol B.",
         "4. Árbol B",
     )
     self._ctx = ctx
@@ -329,7 +362,7 @@ class FindGlobalCommand(Command):
     super().__init__(
         "find-global",
         "find-global <token>",
-        "Busca una variable o función en el Árbol B indicando archivo (ID) y línea.",
+        "Busca una variable en todos los archivos usando el Árbol B (ej: contador).",
         "4. Árbol B",
     )
     self._ctx = ctx
@@ -337,8 +370,9 @@ class FindGlobalCommand(Command):
   def execute(self, args: str) -> None:
     token = args.strip()
     if not token:
+      print("\n[Búsqueda Global en Archivos con Árbol B]")
       token = input(
-          "  -> Nombre de variable o función a buscar (ej. contador): "
+          "  👉 Nombre de la variable o función a buscar (ej: contador, bono): "
       ).strip()
     if token:
       self._ctx.b_tree.find_global(token)
@@ -371,20 +405,21 @@ class TouchCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "touch",
-        "touch <archivo> [codigo]",
-        "Crea un archivo físico y virtual en la carpeta actual y actualiza el Árbol B.",
-        "Fase 1 / N-ario",
+        "touch <archivo>",
+        "Crea un nuevo archivo físico y virtual en la carpeta actual.",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
     cleaned = args.strip()
     if not cleaned:
-      filename = input("  -> Nombre del nuevo archivo (ej. test.py): ").strip()
+      print("\n[Crear Nuevo Archivo de Código]")
+      filename = input("  👉 Nombre del archivo (ej: notas.py): ").strip()
       if not filename:
         return
       content = input(
-          "  -> Contenido inicial (opcional, usa \\n para varias líneas): "
+          "  👉 Código inicial (ej: contador = (10 + 5) * 2): "
       ).replace("\\n", "\n")
     else:
       parts = cleaned.split(None, 1)
@@ -409,7 +444,7 @@ class ListFilesCommand(Command):
         "ls",
         "ls",
         "Lista todos los archivos abiertos en la Lista Doblemente Enlazada.",
-        "Fase 1",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -423,16 +458,17 @@ class UseFileCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "use",
-        "use <id_o_nombre>",
-        "Cambia el archivo activo por su ID o nombre.",
-        "Fase 1",
+        "use <archivo>",
+        "Cambia cuál es el archivo activo por su ID o nombre.",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
     ident = args.strip()
     if not ident:
-      ident = input("  -> ID o nombre del archivo a activar: ").strip()
+      self._ctx.file_list.list_files()
+      ident = input("  👉 Escribe el ID o nombre del archivo a activar: ").strip()
     if ident and self._ctx.file_list.switch_active_file(ident):
       self._ctx.undo_redo.clear()
 
@@ -444,8 +480,8 @@ class CatCommand(Command):
     super().__init__(
         "cat",
         "cat",
-        "Muestra el contenido numerado del archivo activo actual.",
-        "Fase 1",
+        "Muestra el código del archivo activo con sus números de línea.",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -467,9 +503,9 @@ class EditCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "edit",
-        "edit [nuevo_codigo]",
-        "Edita el archivo activo, guarda en Undo, evalúa expresiones y re-indexa Árbol B.",
-        "Fase 1 / Binario",
+        "edit",
+        "Modifica el código del archivo activo y guarda el estado anterior en Undo.",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -486,7 +522,7 @@ class EditCommand(Command):
       print(active.content)
       print("------------------------------------------")
       new_text = input(
-          "  -> Nuevo contenido (usa \\n para saltos de línea): "
+          "  👉 Nuevo código (usa \\n para separar líneas): "
       ).replace("\\n", "\n")
 
     self._ctx.undo_redo.record_state(active.content)
@@ -503,8 +539,8 @@ class SyntaxCommand(Command):
     super().__init__(
         "syntax",
         "syntax",
-        "Valida el balanceo de (), {}, [] en el archivo activo usando la Pila.",
-        "Fase 1",
+        "Valida que (), {}, [] estén bien balanceados usando la Pila.",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -524,7 +560,7 @@ class UndoCommand(Command):
         "undo",
         "undo",
         "Deshace el último cambio en el archivo activo (Pila Undo).",
-        "Fase 1",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -543,8 +579,8 @@ class RedoCommand(Command):
     super().__init__(
         "redo",
         "redo",
-        "Rehace el último cambio deshecho en el archivo activo (Pila Redo).",
-        "Fase 1",
+        "Rehace el cambio deshecho en el archivo activo (Pila Redo).",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -562,9 +598,9 @@ class AiAskCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "ai-ask",
-        "ai-ask <instruccion>",
-        "Encola una solicitud para la IA en la Cola FIFO (explicar/optimizar/refactorizar).",
-        "Fase 1",
+        "ai-ask <accion>",
+        "Encola una petición a la IA en la Cola FIFO (explicar/optimizar).",
+        "IA (Fase 1)",
     )
     self._ctx = ctx
 
@@ -572,7 +608,7 @@ class AiAskCommand(Command):
     cmd = args.strip()
     if not cmd:
       cmd = input(
-          "  -> Instrucción para IA (explicar/optimizar/refactorizar): "
+          "  👉 Instrucción para IA (explicar / optimizar / refactorizar): "
       ).strip()
     if cmd:
       active = self._ctx.file_list.get_active_file()
@@ -587,8 +623,8 @@ class AiRunCommand(Command):
     super().__init__(
         "ai-run",
         "ai-run",
-        "Desencola y procesa la siguiente solicitud en la Cola FIFO de IA.",
-        "Fase 1",
+        "Desencola y procesa la siguiente petición pendiente de la Cola FIFO.",
+        "IA (Fase 1)",
     )
     self._ctx = ctx
 
@@ -606,8 +642,8 @@ class SortCommand(Command):
     super().__init__(
         "sort",
         "sort [name|id]",
-        "Ordena la lista de archivos por nombre (InsertionSort) o por ID (QuickSort).",
-        "Fase 1",
+        "Ordena los archivos por nombre (InsertionSort) o por ID (QuickSort).",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
@@ -616,7 +652,15 @@ class SortCommand(Command):
       print("[Info] No hay archivos para ordenar.")
       return
 
-    mode = args.strip().lower() or "name"
+    mode = args.strip().lower()
+    if not mode:
+      mode = (
+          input("  👉 ¿Ordenar por 'name' (InsertionSort) o 'id' (QuickSort)?: ")
+          .strip()
+          .lower()
+          or "name"
+      )
+
     files_meta = []
     curr = self._ctx.file_list.head
     while curr is not None:
@@ -643,89 +687,22 @@ class RemoveFileCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "rm",
-        "rm <id_o_nombre>",
+        "rm <archivo>",
         "Elimina un archivo de la Lista Enlazada, del Árbol N-ario y del disco.",
-        "Fase 1 / N-ario",
+        "Archivos (Fase 1)",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
     ident = args.strip()
     if not ident:
-      ident = input("  -> ID o nombre del archivo a eliminar: ").strip()
+      ident = input("  👉 ID o nombre del archivo a eliminar: ").strip()
     if ident:
       removed = self._ctx.file_list.delete_file(ident)
       if removed is not None:
         self._ctx.workspace_tree.remove_file_node(removed.filename)
         self._ctx.undo_redo.clear()
         self._ctx.b_tree.index_all_files(self._ctx.file_list)
-
-
-class DemoCommand(Command):
-  """Comando CLI: demo — Ejecuta automáticamente una demostración de los 4 árboles de una sola vez."""
-
-  def __init__(self, invoker):
-    super().__init__(
-        "demo",
-        "demo",
-        "Ejecuta de una sola vez la demostración completa de los 4 árboles del proyecto.",
-        "Demostración",
-    )
-    self._invoker = invoker
-
-  def execute(self, args: str) -> None:
-    steps = (
-        (
-            "PASO 1: ÁRBOL N-ARIO — Crear carpetas anidadas, mover archivos y mostrar 'tree' en Preorden",
-            (
-                "mkdir src",
-                "mkdir src/controllers",
-                "cd src",
-                "touch calculos.py contador = (10 + 5) * 2",
-                "cd ..",
-                "mv main.py src",
-                "tree",
-            ),
-        ),
-        (
-            "PASO 2: ÁRBOL BINARIO DE EXPRESIONES — Evaluar expresiones en Postorden y Linter",
-            (
-                'eval "(4+8)*3"',
-                'eval "(5 + 3) * 2"',
-                "lint-math",
-            ),
-        ),
-        (
-            "PASO 3: ÁRBOL AVL — Insertar palabra clave con balanceo, autocompletar prefijo y recorridos",
-            (
-                "add-keyword struct Estructura de datos compuesta",
-                "suggest in",
-                "suggest st",
-                "avl-info",
-            ),
-        ),
-        (
-            "PASO 4: ÁRBOL B (Orden m=4) — Indexar todo el Workspace y buscar 'contador' globalmente",
-            (
-                "index-all",
-                "find-global contador",
-                "btree-info",
-            ),
-        ),
-    )
-
-    print("\n" + "=" * 86)
-    print("   EJECUTANDO DEMOSTRACIÓN AUTOMÁTICA DE LOS 4 MÓDULOS (FASE 2 - SYNTHETIX STUDIO)   ")
-    print("=" * 86)
-    for title, cmd_list in steps:
-      print(f"\n>>> [{title}]")
-      print("-" * 86)
-      for cmd_str in cmd_list:
-        print(f"\n$ {cmd_str}")
-        self._invoker.execute_single(cmd_str)
-    print("\n" + "=" * 86)
-    print("   [DEMOSTRACIÓN COMPLETADA CON ÉXITO] Todos los módulos fueron verificados.   ")
-    print("=" * 86 + "\n")
 
 
 class ExitCommand(Command):
@@ -735,7 +712,7 @@ class ExitCommand(Command):
     super().__init__(
         "exit",
         "exit",
-        "Finaliza la sesión interactiva de Synthetix Studio CLI.",
+        "Cierra el programa Synthetix Studio CLI.",
         "Sistema",
     )
 
@@ -768,7 +745,7 @@ class HelpCommand(Command):
     super().__init__(
         "help",
         "help",
-        "Muestra la guía rápida de todos los comandos disponibles.",
+        "Muestra la tabla detallada de todos los comandos.",
         "Sistema",
     )
     self._invoker = invoker
@@ -778,9 +755,9 @@ class HelpCommand(Command):
 
 
 class CommandInvoker:
-  """Invocador (Invoker) del Patrón Command que gestiona el registro y despacho
+  """Invocador (Invoker) del Patrón Command que gestiona el registro y ejecución
 
-  de comandos individuales o encadenados con ';' en una sola línea.
+  de cada comando individual ingresado en la consola CLI.
   """
 
   def __init__(self):
@@ -814,41 +791,8 @@ class CommandInvoker:
     return None
 
   def execute_line(self, raw_line: str) -> None:
-    """Permite ejecutar un comando o varios comandos de una sola vez separados por ';'."""
+    """Ejecuta el comando individual ingresado por el usuario."""
     cleaned = raw_line.strip()
-    if not cleaned:
-      return
-
-    # Separar por ';' respetando comillas para permitir aplicar varios comandos de una sola vez
-    subcommands = []
-    current_cmd = ""
-    in_quotes = False
-    quote_ch = ""
-
-    for ch in cleaned:
-      if ch in ('"', "'"):
-        if not in_quotes:
-          in_quotes = True
-          quote_ch = ch
-        elif quote_ch == ch:
-          in_quotes = False
-        current_cmd += ch
-      elif ch == ";" and not in_quotes:
-        if current_cmd.strip():
-          subcommands.append(current_cmd.strip())
-        current_cmd = ""
-      else:
-        current_cmd += ch
-
-    if current_cmd.strip():
-      subcommands.append(current_cmd.strip())
-
-    for single_cmd in subcommands:
-      self.execute_single(single_cmd)
-
-  def execute_single(self, single_line: str) -> None:
-    """Ejecuta una instrucción individual a través del objeto Command correspondiente."""
-    cleaned = single_line.strip()
     if not cleaned:
       return
 
@@ -859,8 +803,8 @@ class CommandInvoker:
     cmd_obj = self.find_command(cmd_name)
     if cmd_obj is None:
       print(
-          f"[Error CLI] Comando desconocido: '{cmd_name}'. Escribe 'help' o"
-          " 'demo'."
+          f"[Error CLI] El comando '{cmd_name}' no existe. Revisa la lista de"
+          " comandos arriba."
       )
       return
 
@@ -871,12 +815,12 @@ class CommandInvoker:
         "\n=========================================================================================="
     )
     print(
-        "                 SYNTHETIX STUDIO CLI — GUÍA RÁPIDA DE COMANDOS (FASE 1 & 2)              "
+        "                 SYNTHETIX STUDIO CLI — TABLA DETALLADA DE COMANDOS                       "
     )
     print(
         "=========================================================================================="
     )
-    print(f"  {'MÓDULO':<16} | {'COMANDO / EJEMPLO':<28} | {'QUÉ HACE'}")
+    print(f"  {'MÓDULO':<18} | {'COMANDO':<24} | {'EXPLICACIÓN'}")
     print(
         "------------------------------------------------------------------------------------------"
     )
@@ -884,20 +828,8 @@ class CommandInvoker:
     while curr is not None:
       if not curr.is_alias:
         cmd = curr.command_obj
-        print(f"  {cmd.module:<16} | {cmd.usage:<28} | {cmd.description}")
+        print(f"  {cmd.module:<18} | {cmd.usage:<24} | {cmd.description}")
       curr = curr.next
-    print(
-        "------------------------------------------------------------------------------------------"
-    )
-    print(
-        "  💡 TIP 1: Escribe 'demo' para ejecutar y probar los 4 árboles automáticamente de una vez."
-    )
-    print(
-        "  💡 TIP 2: Puedes encadenar varios comandos en una sola línea separándolos con ';':"
-    )
-    print(
-        '            Ejemplo: mkdir src ; mv main.py src ; tree ; eval "(4+8)*3" ; suggest in'
-    )
     print(
         "==========================================================================================\n"
     )
