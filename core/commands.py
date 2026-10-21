@@ -69,14 +69,18 @@ class MkdirCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "mkdir",
-        "mkdir <nombre_carpeta>",
-        "Crea un nuevo directorio en el nivel actual del Workspace virtual y físico.",
-        "Árbol N-ario",
+        "mkdir <carpeta>",
+        "Crea una carpeta (o ruta anidada ej. src/utils) en el Workspace.",
+        "1. Árbol N-ario",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
-    self._ctx.workspace_tree.mkdir(args)
+    folder = args.strip()
+    if not folder:
+      folder = input("  -> Nombre de la carpeta a crear (ej. src): ").strip()
+    if folder:
+      self._ctx.workspace_tree.mkdir(folder)
 
 
 class CdCommand(Command):
@@ -85,14 +89,20 @@ class CdCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "cd",
-        "cd <nombre_carpeta>",
-        "Cambia el directorio de trabajo actual navegando por el Árbol N-ario (cd .. para subir).",
-        "Árbol N-ario",
+        "cd <carpeta>",
+        "Cambia de directorio en el Árbol N-ario ('cd ..' sube, 'cd /' va a raíz).",
+        "1. Árbol N-ario",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
-    self._ctx.workspace_tree.cd(args)
+    target = args.strip()
+    if not target:
+      target = input(
+          "  -> Carpeta destino (ej. src, .. para subir, / para raíz): "
+      ).strip()
+    if target:
+      self._ctx.workspace_tree.cd(target)
 
 
 class TreeCommand(Command):
@@ -102,8 +112,8 @@ class TreeCommand(Command):
     super().__init__(
         "tree",
         "tree",
-        "Imprime la jerarquía completa del proyecto recorriendo el Árbol N-ario en preorden.",
-        "Árbol N-ario",
+        "Imprime el árbol visual del proyecto recorriendo el Árbol N-ario en Preorden.",
+        "1. Árbol N-ario",
     )
     self._ctx = ctx
 
@@ -117,18 +127,27 @@ class MoveFileCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "mv",
-        "mv <archivo> <carpeta_destino>",
-        "Mueve un archivo (creado en Fase 1/2) dentro de las carpetas del Árbol N-ario.",
-        "Árbol N-ario",
+        "mv <archivo> <carpeta>",
+        "Mueve un archivo dentro de una carpeta del Árbol N-ario y en disco.",
+        "1. Árbol N-ario",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
     parts = args.strip().split(None, 1)
     if len(parts) < 2:
-      print("[Error] Uso correcto: mv <nombre_archivo> <carpeta_destino>")
-      return
-    filename, dest_folder = parts[0], parts[1].strip()
+      print("  [Asistente mv] Mover archivo dentro del Árbol N-ario:")
+      filename = (
+          parts[0]
+          if len(parts) == 1
+          else input("  -> Nombre del archivo a mover (ej. main.py): ").strip()
+      )
+      dest_folder = input("  -> Carpeta destino (ej. src o ..): ").strip()
+      if not filename or not dest_folder:
+        print("[Error] Debes indicar archivo y carpeta destino.")
+        return
+    else:
+      filename, dest_folder = parts[0], parts[1].strip()
     self._ctx.workspace_tree.move_file(filename, dest_folder)
 
 
@@ -143,19 +162,21 @@ class EvalCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "eval",
-        'eval "<expresion>"',
-        "Parsea una expresión, construye el Árbol Binario y la evalúa en postorden.",
-        "Árbol Binario",
+        'eval "(4+8)*3"',
+        "Construye el Árbol Binario de Expresión y calcula el resultado en Postorden.",
+        "2. Árbol Binario",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
-    if not args.strip():
-      print('[Error] Uso correcto: eval "<expresion>" (ej. eval "(4+8)*3")')
+    expr = args.strip()
+    if not expr:
+      expr = input("  -> Ingresa la expresión matemática (ej. (4+8)*3): ").strip()
+    if not expr:
       return
     try:
       expr_tree = ExpressionBinaryTree()
-      expr_tree.build_from_expression(args)
+      expr_tree.build_from_expression(expr)
       result = expr_tree.evaluate_postorder()
       print("\n=== EVALUADOR DE EXPRESIONES (ÁRBOL BINARIO) ===")
       print(f"  • Expresión (Inorden) : {expr_tree.get_inorder_str()}")
@@ -174,8 +195,8 @@ class LintMathCommand(Command):
     super().__init__(
         "lint-math",
         "lint-math",
-        "Ejecuta el linter de cálculos en tiempo de escritura sobre el archivo activo.",
-        "Árbol Binario",
+        "Evalúa automáticamente todas las operaciones matemáticas del archivo activo.",
+        "2. Árbol Binario",
     )
     self._ctx = ctx
 
@@ -198,16 +219,19 @@ class AddKeywordCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "add-keyword",
-        "add-keyword <palabra> [descripcion]",
-        "Inserta una nueva palabra clave en el Árbol AVL aplicando rotaciones de balanceo.",
-        "Árbol AVL",
+        "add-keyword <palabra>",
+        "Inserta una palabra clave en el Árbol AVL y lo auto-balancea con rotaciones.",
+        "3. Árbol AVL",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
     cleaned = args.strip()
     if not cleaned:
-      print("[Error] Uso correcto: add-keyword <palabra> [descripcion]")
+      cleaned = input(
+          "  -> Palabra clave a agregar al Árbol AVL (ej. struct): "
+      ).strip()
+    if not cleaned:
       return
     parts = cleaned.split(None, 1)
     keyword = parts[0]
@@ -227,16 +251,18 @@ class DelKeywordCommand(Command):
         "del-keyword",
         "del-keyword <palabra>",
         "Elimina una palabra clave del Árbol AVL en O(log n) y rebalancea.",
-        "Árbol AVL",
+        "3. Árbol AVL",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
     cleaned = args.strip()
     if not cleaned:
-      print("[Error] Uso correcto: del-keyword <palabra>")
-      return
-    self._ctx.avl_tree.delete(cleaned)
+      cleaned = input(
+          "  -> Palabra clave a eliminar del Árbol AVL (ej. struct): "
+      ).strip()
+    if cleaned:
+      self._ctx.avl_tree.delete(cleaned)
 
 
 class SuggestCommand(Command):
@@ -246,13 +272,17 @@ class SuggestCommand(Command):
     super().__init__(
         "suggest",
         "suggest <prefijo>",
-        "Busca en el Árbol AVL y retorna sugerencias alfabéticas (inorden) para el prefijo.",
-        "Árbol AVL",
+        "Autocompleta palabras clave por prefijo usando búsqueda binaria + Inorden.",
+        "3. Árbol AVL",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
-    self._ctx.avl_tree.print_suggestions(args)
+    prefix = args.strip()
+    if not prefix:
+      prefix = input("  -> Prefijo a buscar en el Árbol AVL (ej. in): ").strip()
+    if prefix:
+      self._ctx.avl_tree.print_suggestions(prefix)
 
 
 class AvlInfoCommand(Command):
@@ -263,7 +293,7 @@ class AvlInfoCommand(Command):
         "avl-info",
         "avl-info",
         "Muestra los recorridos Inorden, Preorden y Postorden del Árbol AVL.",
-        "Árbol AVL",
+        "3. Árbol AVL",
     )
     self._ctx = ctx
 
@@ -283,8 +313,8 @@ class IndexAllCommand(Command):
     super().__init__(
         "index-all",
         "index-all",
-        "Escanea todos los archivos abiertos y construye/actualiza el Árbol B con los tokens.",
-        "Árbol B",
+        "Escanea todos los archivos del proyecto e indexa variables/funciones en el Árbol B.",
+        "4. Árbol B",
     )
     self._ctx = ctx
 
@@ -299,13 +329,19 @@ class FindGlobalCommand(Command):
     super().__init__(
         "find-global",
         "find-global <token>",
-        "Busca un token específico en el Árbol B y muestra archivos y líneas donde aparece.",
-        "Árbol B",
+        "Busca una variable o función en el Árbol B indicando archivo (ID) y línea.",
+        "4. Árbol B",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
-    self._ctx.b_tree.find_global(args)
+    token = args.strip()
+    if not token:
+      token = input(
+          "  -> Nombre de variable o función a buscar (ej. contador): "
+      ).strip()
+    if token:
+      self._ctx.b_tree.find_global(token)
 
 
 class BTreeInfoCommand(Command):
@@ -315,8 +351,8 @@ class BTreeInfoCommand(Command):
     super().__init__(
         "btree-info",
         "btree-info",
-        "Muestra las páginas/nodos internos del Árbol B y su recorrido inorden.",
-        "Árbol B",
+        "Muestra las páginas/nodos internos del Árbol B y su recorrido Inorden.",
+        "4. Árbol B",
     )
     self._ctx = ctx
 
@@ -335,8 +371,8 @@ class TouchCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "touch",
-        "touch <archivo> [contenido]",
-        "Crea un nuevo archivo físico y virtual en el directorio actual del Workspace.",
+        "touch <archivo> [codigo]",
+        "Crea un archivo físico y virtual en la carpeta actual y actualiza el Árbol B.",
         "Fase 1 / N-ario",
     )
     self._ctx = ctx
@@ -344,11 +380,16 @@ class TouchCommand(Command):
   def execute(self, args: str) -> None:
     cleaned = args.strip()
     if not cleaned:
-      print("[Error] Uso correcto: touch <nombre_archivo> [contenido_inicial]")
-      return
-    parts = cleaned.split(None, 1)
-    filename = parts[0]
-    content = parts[1].replace("\\n", "\n") if len(parts) > 1 else ""
+      filename = input("  -> Nombre del nuevo archivo (ej. test.py): ").strip()
+      if not filename:
+        return
+      content = input(
+          "  -> Contenido inicial (opcional, usa \\n para varias líneas): "
+      ).replace("\\n", "\n")
+    else:
+      parts = cleaned.split(None, 1)
+      filename = parts[0]
+      content = parts[1].replace("\\n", "\n") if len(parts) > 1 else ""
 
     phys_dir = self._ctx.workspace_tree.get_physical_path()
     file_node = self._ctx.file_list.create_file(filename, content, phys_dir)
@@ -357,6 +398,7 @@ class TouchCommand(Command):
           file_node, self._ctx.workspace_tree.current_dir
       )
       ExpressionBinaryTree.lint_code_expressions(file_node.content)
+      self._ctx.b_tree.index_all_files(self._ctx.file_list)
 
 
 class ListFilesCommand(Command):
@@ -382,7 +424,7 @@ class UseFileCommand(Command):
     super().__init__(
         "use",
         "use <id_o_nombre>",
-        "Cambia el archivo activo por su ID o nombre y reinicia las pilas Undo/Redo.",
+        "Cambia el archivo activo por su ID o nombre.",
         "Fase 1",
     )
     self._ctx = ctx
@@ -390,9 +432,8 @@ class UseFileCommand(Command):
   def execute(self, args: str) -> None:
     ident = args.strip()
     if not ident:
-      print("[Error] Uso correcto: use <id_o_nombre_archivo>")
-      return
-    if self._ctx.file_list.switch_active_file(ident):
+      ident = input("  -> ID o nombre del archivo a activar: ").strip()
+    if ident and self._ctx.file_list.switch_active_file(ident):
       self._ctx.undo_redo.clear()
 
 
@@ -403,7 +444,7 @@ class CatCommand(Command):
     super().__init__(
         "cat",
         "cat",
-        "Muestra el contenido del archivo activo actual.",
+        "Muestra el contenido numerado del archivo activo actual.",
         "Fase 1",
     )
     self._ctx = ctx
@@ -426,8 +467,8 @@ class EditCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "edit",
-        "edit [nuevo_contenido]",
-        "Edita el archivo activo, guarda en Pila Undo y ejecuta el Linter de Expresiones.",
+        "edit [nuevo_codigo]",
+        "Edita el archivo activo, guarda en Undo, evalúa expresiones y re-indexa Árbol B.",
         "Fase 1 / Binario",
     )
     self._ctx = ctx
@@ -445,14 +486,14 @@ class EditCommand(Command):
       print(active.content)
       print("------------------------------------------")
       new_text = input(
-          "Ingresa el nuevo contenido (usa \\n para saltos de línea): "
+          "  -> Nuevo contenido (usa \\n para saltos de línea): "
       ).replace("\\n", "\n")
 
     self._ctx.undo_redo.record_state(active.content)
     active.content = new_text
     print(f"[Éxito] Contenido de '{active.filename}' actualizado en memoria y disco.")
-    # Ejecutar linter de cálculos en tiempo de escritura (Árbol Binario en Postorden)
     ExpressionBinaryTree.lint_code_expressions(active.content)
+    self._ctx.b_tree.index_all_files(self._ctx.file_list)
 
 
 class SyntaxCommand(Command):
@@ -462,7 +503,7 @@ class SyntaxCommand(Command):
     super().__init__(
         "syntax",
         "syntax",
-        "Valida el balanceo de delimitadores (), {}, [] en el archivo activo usando Pila.",
+        "Valida el balanceo de (), {}, [] en el archivo activo usando la Pila.",
         "Fase 1",
     )
     self._ctx = ctx
@@ -482,7 +523,7 @@ class UndoCommand(Command):
     super().__init__(
         "undo",
         "undo",
-        "Deshace el último cambio en el archivo activo usando la Pila Undo.",
+        "Deshace el último cambio en el archivo activo (Pila Undo).",
         "Fase 1",
     )
     self._ctx = ctx
@@ -502,7 +543,7 @@ class RedoCommand(Command):
     super().__init__(
         "redo",
         "redo",
-        "Rehace el último cambio deshecho en el archivo activo usando la Pila Redo.",
+        "Rehace el último cambio deshecho en el archivo activo (Pila Redo).",
         "Fase 1",
     )
     self._ctx = ctx
@@ -530,11 +571,13 @@ class AiAskCommand(Command):
   def execute(self, args: str) -> None:
     cmd = args.strip()
     if not cmd:
-      print("[Error] Uso correcto: ai-ask <explicar|optimizar|refactorizar>")
-      return
-    active = self._ctx.file_list.get_active_file()
-    payload = active.content if active else ""
-    self._ctx.request_queue.enqueue(cmd, payload)
+      cmd = input(
+          "  -> Instrucción para IA (explicar/optimizar/refactorizar): "
+      ).strip()
+    if cmd:
+      active = self._ctx.file_list.get_active_file()
+      payload = active.content if active else ""
+      self._ctx.request_queue.enqueue(cmd, payload)
 
 
 class AiRunCommand(Command):
@@ -544,7 +587,7 @@ class AiRunCommand(Command):
     super().__init__(
         "ai-run",
         "ai-run",
-        "Desencola y procesa la siguiente solicitud pendiente en la Cola FIFO de IA.",
+        "Desencola y procesa la siguiente solicitud en la Cola FIFO de IA.",
         "Fase 1",
     )
     self._ctx = ctx
@@ -562,7 +605,7 @@ class SortCommand(Command):
   def __init__(self, ctx: IDEContext):
     super().__init__(
         "sort",
-        "sort <name|id>",
+        "sort [name|id]",
         "Ordena la lista de archivos por nombre (InsertionSort) o por ID (QuickSort).",
         "Fase 1",
     )
@@ -601,7 +644,7 @@ class RemoveFileCommand(Command):
     super().__init__(
         "rm",
         "rm <id_o_nombre>",
-        "Elimina un archivo de la Lista Doblemente Enlazada, del Árbol N-ario y del disco.",
+        "Elimina un archivo de la Lista Enlazada, del Árbol N-ario y del disco.",
         "Fase 1 / N-ario",
     )
     self._ctx = ctx
@@ -609,12 +652,80 @@ class RemoveFileCommand(Command):
   def execute(self, args: str) -> None:
     ident = args.strip()
     if not ident:
-      print("[Error] Uso correcto: rm <id_o_nombre_archivo>")
-      return
-    removed = self._ctx.file_list.delete_file(ident)
-    if removed is not None:
-      self._ctx.workspace_tree.remove_file_node(removed.filename)
-      self._ctx.undo_redo.clear()
+      ident = input("  -> ID o nombre del archivo a eliminar: ").strip()
+    if ident:
+      removed = self._ctx.file_list.delete_file(ident)
+      if removed is not None:
+        self._ctx.workspace_tree.remove_file_node(removed.filename)
+        self._ctx.undo_redo.clear()
+        self._ctx.b_tree.index_all_files(self._ctx.file_list)
+
+
+class DemoCommand(Command):
+  """Comando CLI: demo — Ejecuta automáticamente una demostración de los 4 árboles de una sola vez."""
+
+  def __init__(self, invoker):
+    super().__init__(
+        "demo",
+        "demo",
+        "Ejecuta de una sola vez la demostración completa de los 4 árboles del proyecto.",
+        "Demostración",
+    )
+    self._invoker = invoker
+
+  def execute(self, args: str) -> None:
+    steps = (
+        (
+            "PASO 1: ÁRBOL N-ARIO — Crear carpetas anidadas, mover archivos y mostrar 'tree' en Preorden",
+            (
+                "mkdir src",
+                "mkdir src/controllers",
+                "cd src",
+                "touch calculos.py contador = (10 + 5) * 2",
+                "cd ..",
+                "mv main.py src",
+                "tree",
+            ),
+        ),
+        (
+            "PASO 2: ÁRBOL BINARIO DE EXPRESIONES — Evaluar expresiones en Postorden y Linter",
+            (
+                'eval "(4+8)*3"',
+                'eval "(5 + 3) * 2"',
+                "lint-math",
+            ),
+        ),
+        (
+            "PASO 3: ÁRBOL AVL — Insertar palabra clave con balanceo, autocompletar prefijo y recorridos",
+            (
+                "add-keyword struct Estructura de datos compuesta",
+                "suggest in",
+                "suggest st",
+                "avl-info",
+            ),
+        ),
+        (
+            "PASO 4: ÁRBOL B (Orden m=4) — Indexar todo el Workspace y buscar 'contador' globalmente",
+            (
+                "index-all",
+                "find-global contador",
+                "btree-info",
+            ),
+        ),
+    )
+
+    print("\n" + "=" * 86)
+    print("   EJECUTANDO DEMOSTRACIÓN AUTOMÁTICA DE LOS 4 MÓDULOS (FASE 2 - SYNTHETIX STUDIO)   ")
+    print("=" * 86)
+    for title, cmd_list in steps:
+      print(f"\n>>> [{title}]")
+      print("-" * 86)
+      for cmd_str in cmd_list:
+        print(f"\n$ {cmd_str}")
+        self._invoker.execute_single(cmd_str)
+    print("\n" + "=" * 86)
+    print("   [DEMOSTRACIÓN COMPLETADA CON ÉXITO] Todos los módulos fueron verificados.   ")
+    print("=" * 86 + "\n")
 
 
 class ExitCommand(Command):
@@ -641,7 +752,9 @@ class ExitCommand(Command):
 class CommandRegistryNode:
   """Nodo enlazado para registrar comandos en el Invoker sin usar diccionarios nativos."""
 
-  def __init__(self, cmd_name: str, command_obj: Command, is_alias: bool = False):
+  def __init__(
+      self, cmd_name: str, command_obj: Command, is_alias: bool = False
+  ):
     self.cmd_name = cmd_name
     self.command_obj = command_obj
     self.is_alias = is_alias
@@ -655,7 +768,7 @@ class HelpCommand(Command):
     super().__init__(
         "help",
         "help",
-        "Muestra la tabla de comandos disponibles integrados con el Patrón Command.",
+        "Muestra la guía rápida de todos los comandos disponibles.",
         "Sistema",
     )
     self._invoker = invoker
@@ -667,7 +780,7 @@ class HelpCommand(Command):
 class CommandInvoker:
   """Invocador (Invoker) del Patrón Command que gestiona el registro y despacho
 
-  de comandos en la consola CLI sin menús numéricos tradicionales.
+  de comandos individuales o encadenados con ';' en una sola línea.
   """
 
   def __init__(self):
@@ -701,8 +814,41 @@ class CommandInvoker:
     return None
 
   def execute_line(self, raw_line: str) -> None:
-    """Parsea la línea ingresada en el prompt y ejecuta el Command correspondiente."""
+    """Permite ejecutar un comando o varios comandos de una sola vez separados por ';'."""
     cleaned = raw_line.strip()
+    if not cleaned:
+      return
+
+    # Separar por ';' respetando comillas para permitir aplicar varios comandos de una sola vez
+    subcommands = []
+    current_cmd = ""
+    in_quotes = False
+    quote_ch = ""
+
+    for ch in cleaned:
+      if ch in ('"', "'"):
+        if not in_quotes:
+          in_quotes = True
+          quote_ch = ch
+        elif quote_ch == ch:
+          in_quotes = False
+        current_cmd += ch
+      elif ch == ";" and not in_quotes:
+        if current_cmd.strip():
+          subcommands.append(current_cmd.strip())
+        current_cmd = ""
+      else:
+        current_cmd += ch
+
+    if current_cmd.strip():
+      subcommands.append(current_cmd.strip())
+
+    for single_cmd in subcommands:
+      self.execute_single(single_cmd)
+
+  def execute_single(self, single_line: str) -> None:
+    """Ejecuta una instrucción individual a través del objeto Command correspondiente."""
+    cleaned = single_line.strip()
     if not cleaned:
       return
 
@@ -713,8 +859,8 @@ class CommandInvoker:
     cmd_obj = self.find_command(cmd_name)
     if cmd_obj is None:
       print(
-          f"[Error CLI] Comando desconocido: '{cmd_name}'. Escribe 'help' para"
-          " ver los comandos disponibles."
+          f"[Error CLI] Comando desconocido: '{cmd_name}'. Escribe 'help' o"
+          " 'demo'."
       )
       return
 
@@ -725,12 +871,12 @@ class CommandInvoker:
         "\n=========================================================================================="
     )
     print(
-        "                 SYNTHETIX STUDIO CLI — REFERENCIA DE COMANDOS (FASE 1 & 2)               "
+        "                 SYNTHETIX STUDIO CLI — GUÍA RÁPIDA DE COMANDOS (FASE 1 & 2)              "
     )
     print(
         "=========================================================================================="
     )
-    print(f"  {'MÓDULO':<15} | {'COMANDO / USO':<32} | {'DESCRIPCIÓN'}")
+    print(f"  {'MÓDULO':<16} | {'COMANDO / EJEMPLO':<28} | {'QUÉ HACE'}")
     print(
         "------------------------------------------------------------------------------------------"
     )
@@ -738,8 +884,20 @@ class CommandInvoker:
     while curr is not None:
       if not curr.is_alias:
         cmd = curr.command_obj
-        print(f"  {cmd.module:<15} | {cmd.usage:<32} | {cmd.description}")
+        print(f"  {cmd.module:<16} | {cmd.usage:<28} | {cmd.description}")
       curr = curr.next
+    print(
+        "------------------------------------------------------------------------------------------"
+    )
+    print(
+        "  💡 TIP 1: Escribe 'demo' para ejecutar y probar los 4 árboles automáticamente de una vez."
+    )
+    print(
+        "  💡 TIP 2: Puedes encadenar varios comandos en una sola línea separándolos con ';':"
+    )
+    print(
+        '            Ejemplo: mkdir src ; mv main.py src ; tree ; eval "(4+8)*3" ; suggest in'
+    )
     print(
         "==========================================================================================\n"
     )
