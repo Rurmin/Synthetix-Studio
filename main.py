@@ -139,10 +139,9 @@ def main() -> None:
     invoker.execute_line(arg_cmd)
     return
 
-  print_welcome_banner()
-
   while True:
     try:
+      print_welcome_banner()
       cwd_path = ctx.workspace_tree.get_virtual_path()
       active = ctx.file_list.get_active_file()
       active_tag = f" [{active.filename}]" if active else ""
