@@ -176,15 +176,32 @@ class WorkspaceTree:
     if token != "":
       yield token
 
+  def _find_dir_recursive(self, current: NaryNode, dir_name: str) -> NaryNode:
+    """Búsqueda en preorden de una carpeta por su nombre en todo el Árbol N-ario."""
+    if current is None:
+      return None
+    if current.is_dir and current.name == dir_name:
+      return current
+    child = current.first_child
+    while child is not None:
+      found = self._find_dir_recursive(child, dir_name)
+      if found is not None:
+        return found
+      child = child.next_sibling
+    return None
+
   def resolve_dir_node(self, path: str) -> NaryNode:
-    """Resuelve una ruta (relativa o absoluta) hacia un nodo carpeta en el Árbol N-ario."""
+    """Resuelve una ruta (relativa, absoluta o por nombre en el árbol) hacia un nodo carpeta."""
     cleaned = path.strip()
     if cleaned == "" or cleaned == ".":
       return self._current_dir
-    if cleaned == "/" or cleaned == f"/{self._root.name}":
+    if cleaned in ("/", f"/{self._root.name}", self._root.name):
       return self._root
+    if cleaned == self._current_dir.name:
+      return self._current_dir
 
     curr = self._root if cleaned.startswith("/") else self._current_dir
+    valid_rel = True
     for part in self._split_path(cleaned):
       if part == ".":
         continue
@@ -196,9 +213,16 @@ class WorkspaceTree:
       else:
         child = curr.find_child(part)
         if child is None or not child.is_dir:
-          return None
+          valid_rel = False
+          break
         curr = child
-    return curr
+
+    if valid_rel:
+      return curr
+
+    # Si el usuario ya se movió a otra carpeta (ej. 'cd Prueba') y escribe 'mv main.py Prueba',
+    # buscamos la carpeta en todo el Árbol N-ario desde la raíz.
+    return self._find_dir_recursive(self._root, cleaned)
 
   def mkdir(self, folder_path: str) -> bool:
     """Crea un nuevo directorio (o directorios anidados) en el nivel actual del Workspace."""
@@ -323,10 +347,10 @@ class WorkspaceTree:
 
     if dest_dir.find_child(filename) is not None:
       print(
-          f"[Error] Ya existe '{filename}' dentro de"
+          f"[Info] El archivo '{filename}' ya se encuentra dentro de"
           f" '{self.get_virtual_path(dest_dir)}'."
       )
-      return False
+      return True
 
     old_parent = file_nary.parent
     old_phys_path = (
