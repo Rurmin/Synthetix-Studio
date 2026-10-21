@@ -1,4 +1,6 @@
-# Compiladores y binarios
+# Compiladores, cache de Python y binarios
+__pycache__/
+*.py[cod]
 *.o
 *.exe
 *.out
@@ -6,6 +8,8 @@ build/
 bin/
 
 # Directorios automáticos locales
+workspace/*
+!workspace/.gitkeep
 backups/*
 logs/*
 !backups/.gitkeep
