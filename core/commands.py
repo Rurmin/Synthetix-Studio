@@ -25,6 +25,7 @@ class IDEContext:
     self.undo_redo = UndoRedoManager()
     self.request_queue = RequestQueue()
     self.ai_service = AIService()
+    self.eval_history = []
 
 
 class Command:
@@ -200,10 +201,12 @@ class EvalCommand(Command):
       expr_tree = ExpressionBinaryTree()
       expr_tree.build_from_expression(expr)
       result = expr_tree.evaluate_postorder()
+      post_str = expr_tree.get_postorder_str()
+      self._ctx.eval_history.append((expr, post_str, result))
       print("\n=== EVALUADOR DE EXPRESIONES (ÁRBOL BINARIO) ===")
       print(f"  • Expresión (Inorden) : {expr_tree.get_inorder_str()}")
       print(f"  • Recorrido Preorden  : {expr_tree.get_preorder_str()}")
-      print(f"  • Recorrido Postorden : {expr_tree.get_postorder_str()}")
+      print(f"  • Recorrido Postorden : {post_str}")
       print(f"  • Resultado Exacto    : {result}")
       print("================================================\n")
     except Exception as e:
@@ -217,17 +220,33 @@ class LintMathCommand(Command):
     super().__init__(
         "lint-math",
         "lint-math",
-        "Calcula automáticamente las operaciones matemáticas del archivo activo.",
+        "Calcula automáticamente las operaciones matemáticas del archivo activo y evaluadas.",
         "2. Árbol Binario",
     )
     self._ctx = ctx
 
   def execute(self, args: str) -> None:
-    active = self._ctx.file_list.get_active_file()
-    if active is None:
-      print("[Error] No hay un archivo activo seleccionado.")
+    curr = self._ctx.file_list.head
+    if curr is None and not self._ctx.eval_history:
+      print("[Error] No hay archivos abiertos ni expresiones evaluadas.")
       return
-    ExpressionBinaryTree.lint_code_expressions(active.content)
+
+    while curr is not None:
+      print(f"\n--- Analizando expresiones en archivo: {curr.filename} ---")
+      ExpressionBinaryTree.lint_code_expressions(curr.content)
+      curr = curr.next
+
+    if self._ctx.eval_history:
+      print(
+          "\n--- Expresiones adicionales evaluadas con 'eval' en esta sesión ---"
+      )
+      for idx, (raw_expr, post_seq, val) in enumerate(
+          self._ctx.eval_history, start=1
+      ):
+        print(
+            f"  • Eval #{idx}: '{raw_expr}' | Postorden: [{post_seq}] =>"
+            f" Resultado = {val}"
+        )
 
 
 # ==============================================================================
