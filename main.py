@@ -108,7 +108,7 @@ def seed_initial_workspace(ctx: IDEContext) -> None:
 
 def print_commands_panel() -> None:
   print("\n======================================================================================")
-  print("     🚀 SYNTHETIX STUDIO CLI — COMANDOS INDIVIDUALES (PATRÓN COMMAND)                 ")
+  print("                              SYNTHETIX STUDIO CLI                                    ")
   print("======================================================================================")
   print("  📁 1. ÁRBOL N-ARIO (Carpetas y Archivos del Workspace):")
   print("     • mkdir <carpeta>        -> Crea una carpeta nueva         (Ej: mkdir src)")
@@ -133,7 +133,6 @@ def print_commands_panel() -> None:
   print("--------------------------------------------------------------------------------------")
   print("  📄 ARCHIVOS (Fase 1): touch | ls | cat | edit | use | syntax | undo | redo | sort | rm")
   print("  ⚙️  SISTEMA          : help (tabla completa) | exit (salir)")
-  print("  💡 Tip: También puedes escribir solo el nombre del comando (ej: mkdir, eval, mv) y te pedirá los datos paso a paso.")
   print("======================================================================================")
 
 
